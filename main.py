@@ -3,6 +3,8 @@ from tkinter import messagebox
 from tkinter import ttk
 
 from bp_tracker.front import BpTableFrame
+from bp_tracker.back import DataHandler
+
 
 class MainApp(Tk):
     def __init__(self, *args, **kwargs):
@@ -26,8 +28,13 @@ class MainApp(Tk):
         messagebox.showinfo("About this program", "Created by Enrico Tuvera Jr on October 10, 2022")
 
 if __name__ == "__main__":
+    # instantiate DataHandler here
+    # and then pass it into the BpTableFrame, which
+    # will then pass it to children, ala prop drilling 
     app = MainApp()
     notebook = ttk.Notebook(app)
+
+    dh: DataHandler = 
     bp = BpTableFrame(notebook)
 
     app.columnconfigure(0, weight=1)
