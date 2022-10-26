@@ -44,6 +44,7 @@ if cli_args.command is None:
 
 class BPDataStore():
     def __init__(self, path: pathlib.Path):
+        # NOTE: maybe a separate FileHandler class for this? 
         self.path = path
         if self.path.exists():
             with self.path.open("r") as F:
@@ -110,14 +111,27 @@ def _remove(cli_args: argparse.Namespace, store: BPDataStore):
     timestamp: int = int(cli_args.timestamp)
     store.remove(timestamp)
 
+# TODO: Make sure to move all these into modules
 def _make_readable_timestamps(rows: list[dict]) -> list[dict]:
-    rows_copy: list[dict] = deepcopy(rows)
-    for row in rows_copy:
-        int_timestamp: int = row["timestamp"]
+    def __convert_timestamp(x: dict) -> dict:
+        int_timestamp: int = x["timestamp"]
         arrow_timestamp: arrow.Arrow = arrow.get(int_timestamp)
         local_arrow_timestamp: arrow.Arrow = arrow_timestamp.to(SYSTZ)
-        row["timestamp"] = local_arrow_timestamp.format()
+        x["timestamp"] = local_arrow_timestamp.format()
+        return x
 
+    rows_copy: list[dict] = [__convert_timestamp(x) for x in rows]
+    return rows_copy
+
+def _make_print_ready(rows: list[dict]) -> list[dict]:
+    def __stringify_everything(x: dict) -> dict:
+        y: dict = {
+            key: str(val)
+            for (key, val) in x.items()
+        }
+        return y
+
+    rows_copy: list[dict] = [__stringify_everything(x) for x in rows]
     return rows_copy
 
 def _latest(cli_args: argparse.Namespace, store: BPDataStore):
@@ -134,19 +148,22 @@ def _latest(cli_args: argparse.Namespace, store: BPDataStore):
         limit: int = cli_args.limit
     else:
         limit: int = 10
-    
-    raw_rows: list[dict] = store.latest(limit)
-    rows: list[dict] = _make_readable_timestamps(raw_rows)
 
-    for x in rows:
-        table.add_row(str(x["sys"]), str(x["dia"]), str(x["pulse"]), str(x["notes"]), str(x["timestamp"]))
+    raw_rows: list[dict] = store.latest(limit)
+    timestamped_rows: list[dict] = _make_readable_timestamps(raw_rows)
+    ready_rows: list[dict] = _make_print_ready(timestamped_rows)
+
+    for x in ready_rows:
+        # NOTE: maybe consider using the starred expression
+        # NOTE: counter - * expression might not preserve the order of the values,
+        #       which is important to the order they appear in the tables.
+        table.add_row(x["sys"], x["dia"], x["pulse"], x["notes"], x["timestamp"])
 
     console.print(table)
 
 if __name__ == "__main__":
     filepath: str = cli_args.filepath
     path: pathlib.Path = pathlib.Path(filepath)
-    print(cli_args)
 
     store: BPDataStore = BPDataStore(path)
     command: str = cli_args.command
