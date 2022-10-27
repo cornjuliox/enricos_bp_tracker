@@ -6,7 +6,6 @@ from bp_tracker.back.data_store import BPDataStore
 from bp_tracker.front.input import add, remove
 from bp_tracker.front.output import latest, month
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "filepath",
