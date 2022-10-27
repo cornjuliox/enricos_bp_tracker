@@ -1,32 +1,37 @@
 import arrow
 import argparse
+from collections.abc import Callable
 
 from rich.console import Console
 from rich.table import Table
 
 from bp_tracker.back.data_store import BPDataStore
-from bp_tracker.front.utils import make_readable_timestamps, make_print_ready, create_table
+from bp_tracker.front.utils import (
+    make_readable_timestamps,
+    make_print_ready,
+    create_table,
+    data_prep_pipeline,
+)
 
 CONSOLE: Console = Console()
 
 def latest(cli_args: argparse.Namespace, store: BPDataStore):
+    limit: int = cli_args.limit or 10
+    raw_rows: list[dict] = store.latest(limit)
+
     table: Table = create_table(
-        title="Latest blood pressure measurements, descending order by time.",
+        title=f"Latest {len(raw_rows)} blood pressure measurements, most recent first.",
         columns=["Sys", "Dia", "Pulse", "Notes", "Timestamp"]
     )
 
-    if cli_args.limit is not None:
-        limit: int = cli_args.limit
-    else:
-        limit: int = 10
-
-    raw_rows: list[dict] = store.latest(limit)
+    # NOTE: order matters!
+    transformers: list[Callable] = []
 
     if cli_args.raw_timestamps is not True:
-        timestamped_rows: list[dict] = make_readable_timestamps(raw_rows)
-        ready_rows: list[dict] = make_print_ready(timestamped_rows)
-    else:
-        ready_rows: list[dict] = make_print_ready(raw_rows)
+        transformers.append(make_readable_timestamps)
+
+    transformers.append(make_print_ready)
+    ready_rows: list[dict] = data_prep_pipeline(raw_rows, transformers)
 
     for x in ready_rows:
         # NOTE: maybe consider using the starred expression

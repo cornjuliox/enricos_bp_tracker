@@ -22,7 +22,11 @@ add_command.add_argument("pulse", type=int, help="Pulse value, read from the mac
 add_command.add_argument("notes", type=str, help="Any important notes you'd like to add. Has to be a string wrapped in double quotes.")
 
 remove_command = subparser.add_parser("remove", help="Removes an entry from the log.")
-remove_command.add_argument("timestamp", type=int, help="The entry timestamp is used as the primary key. Every entry with this timestamp will be removed.")
+remove_command.add_argument(
+    "timestamp",
+    type=int,
+    help="The entry timestamp is used as the primary key, and every entry matching that timestamp will be removed."
+)
 
 latest_command = subparser.add_parser("latest", help="Shows the latest N items, by default 10, use --limit to specify how many.")
 latest_command.add_argument("--raw_timestamps", action="store_true")
@@ -42,9 +46,9 @@ if cli_args.command is None:
 if __name__ == "__main__":
     filepath: str = cli_args.filepath
     path: pathlib.Path = pathlib.Path(filepath)
-
     store: BPDataStore = BPDataStore(path)
     command: str = cli_args.command
+
     # NOTE: I guess these would be the equivalent of "views"
     dispatch: dict = {
         "add": add,
