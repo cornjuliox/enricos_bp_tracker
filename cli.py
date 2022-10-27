@@ -1,19 +1,11 @@
 import argparse
-import datetime
-import json
 import pathlib
 from copy import deepcopy
 
-from datetime import timezone
+from bp_tracker.back.data_store import BPDataStore
+from bp_tracker.front.input import add, remove
+from bp_tracker.front.output import latest, month
 
-import arrow
-from rich import print
-from rich.console import Console
-from rich.table import Table
-
-# NOTE: This is needed to convert timestamps to the correct local timezone.
-# NOTE: It's also really ugly looking lol
-SYSTZ: timezone = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -23,17 +15,23 @@ parser.add_argument(
 )
 subparser = parser.add_subparsers(help="sub-commands", dest="command")
 
-add_command = subparser.add_parser("add", help="adds an entry to the log")
+# NOTE: I don't know what the types are for the subparsers? or any of the parsers for that matter. 
+add_command = subparser.add_parser("add", help="Adds an entry to the log")
 add_command.add_argument("sys", type=int, help="Systolic pressure, read from the machine, needs to be a number.")
 add_command.add_argument("dia", type=int, help="Diastolic pressure, read from the machine, needs to be a number.")
 add_command.add_argument("pulse", type=int, help="Pulse value, read from the machine, needs to be a number.")
 add_command.add_argument("notes", type=str, help="Any important notes you'd like to add. Has to be a string wrapped in double quotes.")
 
-remove_command = subparser.add_parser("remove", help="removes an entry from the log.")
-remove_command.add_argument("timestamp", type=int, help="refers to the exact")
+remove_command = subparser.add_parser("remove", help="Removes an entry from the log.")
+remove_command.add_argument("timestamp", type=int, help="The entry timestamp is used as the primary key. Every entry with this timestamp will be removed.")
 
-latest_command = subparser.add_parser("latest", help="shows the latest N items, use --limit to specify how many.")
-latest_command.add_argument("--limit", type=int, help="how many items would you like to see?")
+latest_command = subparser.add_parser("latest", help="Shows the latest N items, by default 10, use --limit to specify how many.")
+latest_command.add_argument("--raw_timestamps", action="store_true")
+latest_command.add_argument("--limit", type=int, help="How many items would you like to see?")
+
+by_month = subparser.add_parser("month", help="View all entries for a specific month, pass in an integer from 1-12.")
+by_month.add_argument("month_int", type=int, help="Integer representing a month - January -> 1, Feburary -> 2, so on so forth.", choices=range(1, 13))
+by_month.add_argument("year_int", type=int, help="Integer representing a 4-digit year, e.g '1998', '2002', etc")
 
 cli_args = parser.parse_args()
 
@@ -42,135 +40,18 @@ cli_args = parser.parse_args()
 if cli_args.command is None:
     parser.error("Need to specify a subcommand, run with -h flag to see the list of subcommands.")
 
-class BPDataStore():
-    def __init__(self, path: pathlib.Path):
-        # NOTE: maybe a separate FileHandler class for this? 
-        self.path = path
-        if self.path.exists():
-            with self.path.open("r") as F:
-                self._bpdata: list[dict] = json.loads(F.read())
-        else:
-            self._bpdata: list[dict] = {}
-
-    def _commit(self):
-        with self.path.open("w") as F:
-            F.write(json.dumps(self._bpdata))
-    
-    def latest(self, limit: int = 10, ascending: bool = False):
-        if limit <= 0:
-            limit: int = 1
-        if limit > len(self._bpdata):
-            limit: int = len(self._bpdata) - 1
-
-        if ascending:
-            prepped: list[dict] = sorted(self._bpdata, key=lambda x: x["timestamp"])
-        else:
-            prepped: list[dict] = sorted(self._bpdata, key=lambda x: x["timestamp"])[::-1]
-
-        return prepped
-
-    def all(self):
-        return self._bpdata
-
-    def specific_month(self, start: int):
-        # NOTE: 'end' is derived from start
-        # NOTE: Need to figure out how to do datepicker stuff via CLI
-        #       maybe just restrict it to a specific syntax? Or I could
-        #       just pass unsanitized input straight to Arrow and let it
-        #       raise an exception when it's wrong.
-        pass
-
-    def add(self, sys: int, dia: int, pulse: int, notes: int, timestamp: int):
-        data: dict = {
-            "sys": sys,
-            "dia": dia,
-            "pulse": pulse,
-            "notes": notes,
-            "timestamp": timestamp
-        }
-
-        self._bpdata.append(data)
-        self._commit()
-
-    # NOTE: There should never be a need to 'edit' an entry, I hope.
-    def remove(self, timestamp: int):
-        new_list: list[dict] = [x for x in self._bpdata if x.get("timestamp") != timestamp]
-        self._bpdata = new_list
-        self._commit()
-
-def _add(cli_args: argparse.Namespace, store: BPDataStore):
-    store.add(
-        sys=cli_args.sys,
-        dia=cli_args.dia,
-        pulse=cli_args.pulse,
-        notes=cli_args.notes,
-        timestamp=int(arrow.now().timestamp())
-    )
-
-def _remove(cli_args: argparse.Namespace, store: BPDataStore):
-    timestamp: int = int(cli_args.timestamp)
-    store.remove(timestamp)
-
-# TODO: Make sure to move all these into modules
-def _make_readable_timestamps(rows: list[dict]) -> list[dict]:
-    def __convert_timestamp(x: dict) -> dict:
-        int_timestamp: int = x["timestamp"]
-        arrow_timestamp: arrow.Arrow = arrow.get(int_timestamp)
-        local_arrow_timestamp: arrow.Arrow = arrow_timestamp.to(SYSTZ)
-        x["timestamp"] = local_arrow_timestamp.format()
-        return x
-
-    rows_copy: list[dict] = [__convert_timestamp(x) for x in rows]
-    return rows_copy
-
-def _make_print_ready(rows: list[dict]) -> list[dict]:
-    def __stringify_everything(x: dict) -> dict:
-        y: dict = {
-            key: str(val)
-            for (key, val) in x.items()
-        }
-        return y
-
-    rows_copy: list[dict] = [__stringify_everything(x) for x in rows]
-    return rows_copy
-
-def _latest(cli_args: argparse.Namespace, store: BPDataStore):
-    console: Console = Console()  # TODO: Move this up later because it can be module level
-    table: Table = Table(title="Latest BP measurements, in descending order by time.")
-
-    table.add_column("Sys")
-    table.add_column("Dia")
-    table.add_column("Pulse")
-    table.add_column("Notes")
-    table.add_column("Timestamp")
-
-    if cli_args.limit is not None:
-        limit: int = cli_args.limit
-    else:
-        limit: int = 10
-
-    raw_rows: list[dict] = store.latest(limit)
-    timestamped_rows: list[dict] = _make_readable_timestamps(raw_rows)
-    ready_rows: list[dict] = _make_print_ready(timestamped_rows)
-
-    for x in ready_rows:
-        # NOTE: maybe consider using the starred expression
-        # NOTE: counter - * expression might not preserve the order of the values,
-        #       which is important to the order they appear in the tables.
-        table.add_row(x["sys"], x["dia"], x["pulse"], x["notes"], x["timestamp"])
-
-    console.print(table)
-
 if __name__ == "__main__":
     filepath: str = cli_args.filepath
     path: pathlib.Path = pathlib.Path(filepath)
 
     store: BPDataStore = BPDataStore(path)
     command: str = cli_args.command
+    # NOTE: I guess these would be the equivalent of "views"
     dispatch: dict = {
-        "add": _add,
-        "remove": _remove,
-        "latest": _latest,
+        "add": add,
+        "remove": remove,
+        "latest": latest,
+        "month": month,
     }
 
     try:
