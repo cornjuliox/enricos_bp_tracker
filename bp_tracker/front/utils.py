@@ -17,7 +17,7 @@ def make_readable_timestamps(rows: list[dict]) -> list[dict]:
         int_timestamp: int = x["timestamp"]
         arrow_timestamp: arrow.Arrow = arrow.get(int_timestamp)
         arrow_timestamp: arrow.Arrow = arrow_timestamp.to(SYSTZ)
-        x["timestamp"] = arrow_timestamp.format()
+        x["timestamp"] = arrow_timestamp.format("MMM DD, YYYY @ HH:mm")
         return x
 
     rows_copy: list[dict] = [__convert_timestamp(x) for x in rows]

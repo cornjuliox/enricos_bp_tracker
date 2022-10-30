@@ -2,6 +2,7 @@ import argparse
 import arrow
 
 from bp_tracker.back.data_store import BPDataStore
+from bp_tracker.front.utils import SYSTZ
 
 def add(cli_args: argparse.Namespace, store: BPDataStore):
     store.add(
@@ -9,7 +10,7 @@ def add(cli_args: argparse.Namespace, store: BPDataStore):
         dia=cli_args.dia,
         pulse=cli_args.pulse,
         notes=cli_args.notes,
-        timestamp=arrow.now().int_timestamp
+        timestamp=arrow.now(SYSTZ).int_timestamp
     )
 
 def remove(cli_args: argparse.Namespace, store: BPDataStore):

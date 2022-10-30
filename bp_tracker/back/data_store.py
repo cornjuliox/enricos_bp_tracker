@@ -33,7 +33,7 @@ class BPDataStore():
     def all(self):
         return self._bpdata
 
-    def specific_month(self, start: int, end: int) -> list[dict]:
+    def date_range(self, start: int, end: int) -> list[dict]:
         prepped: list[dict] = [x for x in self._bpdata if x["timestamp"] >= start and x["timestamp"] <= end]
         prepped: list[dict] = sorted(prepped, key=lambda x: x["timestamp"])[::-1]
         return prepped
