@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <title>Blood Pressure Report</title>
+    </head>
+    <body>
+        <table>
+            <tr>
+                <th>Sys</th>
+                <th>Pulse</th>
+                <th>Dia</th>
+                <th>Notes</th>
+                <th>Timestamp</th>
+            </tr>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.sys }}</td>
+                    <td>{{ row.pulse }}</td>
+                    <td>{{ row.dia }}</td>
+                    <td>{{ row.notes }}</td>
+                    <td>{{ row.timestamp }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>

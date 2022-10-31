@@ -96,8 +96,11 @@ by_date_range.add_argument(
     type=str,
     help="End date, in the format YYYY-MM-DD."
 )
+by_date_range.add_argument(
+    "--report",
+    action="store_true"
+)
 #####################
-
 cli_args = parser.parse_args()
 
 # NOTE: There is apparently no way to do this within argparse.

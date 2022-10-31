@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from bp_tracker.back.data_store import BPDataStore
+from bp_tracker.front.report_generator import generate_report, env
 from bp_tracker.front.utils import (
     make_readable_timestamps,
     make_print_ready,
@@ -71,8 +72,16 @@ def month(cli_args: argparse.Namespace, store: BPDataStore):
 def date_range(cli_args: argparse.Namespace, store: BPDataStore):
     start_date: str = cli_args.start_date
     end_date: str = cli_args.end_date
+
+    # NOTE: Small note re: the end_date here, passing in `2022-07-01 2022-10-31` as args
+    #       implies to laymen that you want everything starting from July 1 to the _end of oct 31_
+    #       But unless you manually shift `end_arrow` to the next day (November 1 technically)
+    #       it will exclude everything from Oct 31.
+    # NOTE: The reason for this is because arrow.get(end_date) will return `2022-10-31 @ 00:00:00+00:00`
+    #       which basically excludes everything on the day of that date.
     start_arrow: arrow.Arrow = arrow.get(start_date)
-    end_arrow: arrow.Arrow = arrow.get(end_date)
+    end_arrow: arrow.Arrow = arrow.get(end_date).shift(days=1)
+
     start_int: int = start_arrow.int_timestamp
     end_int: int = end_arrow.int_timestamp
 
@@ -88,6 +97,12 @@ def date_range(cli_args: argparse.Namespace, store: BPDataStore):
     for x in ready_rows:
         table.add_row(x["sys"], x["dia"], x["pulse"], x["notes"], x["timestamp"])
 
-    CONSOLE.print(table)
-
-
+    if cli_args.report:
+        # print("Generating a report...")
+        # NOTE: don't pass env in like this
+        # NOTE: redo the report stuff this is horrible
+        # NOTE: seriously. looking at it makes me angry
+        generate_report(env, ready_rows)
+        return
+    else:
+        CONSOLE.print(table)
