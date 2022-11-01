@@ -20,7 +20,11 @@ parser.add_argument("--console_only", action="store_true", default=False)
 cli_args: argparse.Namespace = parser.parse_args()
 
 def __clean_dict(dict_in: dict) -> dict:
-    copy: dict = {x.lower(): y for (x, y) in dict_in.items() if x != ''}
+    copy: dict = {
+        x.lower(): y
+        for (x, y) in dict_in.items()
+        if x != '' and x is not None
+    }
     return copy
 
 def __convert_dates(dict_in: dict) -> dict:

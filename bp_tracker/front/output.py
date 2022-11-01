@@ -1,5 +1,6 @@
 import arrow
 import argparse
+import pathlib
 from collections.abc import Callable
 
 from rich.console import Console
@@ -103,3 +104,31 @@ def date_range(cli_args: argparse.Namespace, store: BPDataStore):
         rep.generate_report(ready_rows)
     else:
         CONSOLE.print(table)
+
+def report(cli_args: argparse.Namespace, store: BPDataStore):
+    output_filename: str = cli_args.output_filename
+
+    # NOTE: uh oh. Duplicate code!
+    start_date: str = cli_args.start_date
+    end_date: str = cli_args.end_date
+
+    start_arrow: arrow.Arrow = arrow.get(start_date)
+    end_arrow: arrow.Arrow = arrow.get(end_date).shift(days=1)
+
+    start_int: int = start_arrow.int_timestamp
+    end_int: int = end_arrow.int_timestamp
+
+    transformers: list[Callable] = [make_readable_timestamps, make_print_ready]
+    ready_rows: list[dict] = store.date_range(start_int, end_int)
+    ready_rows = data_prep_pipeline(ready_rows, transformers)
+    # NOTE: uh oh. Duplicate code! Maybe that's OK though?
+
+    report_generator: ReportGenerator = ReportGenerator()
+    ready_report: str = report_generator.generate_report(ready_rows)
+
+    abs_path: pathlib.Path = pathlib.Path().absolute()
+    full_path: pathlib.Path = abs_path / output_filename
+    print(full_path)
+
+    with full_path.open("w") as F:
+        F.write(ready_report)

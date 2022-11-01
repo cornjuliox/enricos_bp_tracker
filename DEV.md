@@ -1,7 +1,12 @@
 # About
 I use this file to track current issues with development and to record my thoughts and shit. Think of it as a sort of 'blog' but in a github repo.
 
+
+
 # Report Generation
+## NOV 2, 2022
+When writing the report I accidentally overwrote DB file because I used the wrong filename. I used `cli_args.filepath` instead of `cli_args.output_filepath` Gotta think about how I want to prevent that going forward...
+
 ## NOV 1, 2022
 The last bit of functionality I need to build out for this thing is the ability to generate reports. Back in the day, Google Sheets was enough - you'd just hit "export" and download it as a PDF and you've got a nice, handy list to hand to your Doctor. If you so choose, you could even use Sheets' ability to generate line graphs to see trends and other related stuff. I don't know how much value line graphs provide to a doctor but it can't hurt to have that ability on hand, right?
 
