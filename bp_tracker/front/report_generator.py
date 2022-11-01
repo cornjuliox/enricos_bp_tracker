@@ -1,4 +1,6 @@
 from pathlib import Path
+
+import arrow
 from jinja2 import (
     Environment,
     PackageLoader,
@@ -6,23 +8,31 @@ from jinja2 import (
     select_autoescape,
 )
 
-env: Environment = Environment(
-    loader=PackageLoader("bp_tracker"),
-    autoescape=select_autoescape()
-)
+class ReportGenerator():
+    def __init__(self):
+        # NOTE: should package name be hardcoded?
+        # NOTE: I don't see why not, at least not for now.
+        # NOTE: I am considering a redesign, there's clearly a lot
+        #       to consider
+        self.env = Environment(
+            loader=PackageLoader("bp_tracker"),
+            autoescape=select_autoescape()
+        )
 
-def generate_report(
-    env: Environment,
-    ready_rows: list[dict],
-    template_name: str="report.html",
-    output_name: str="output.html",
-):
-    # NOTE: Should cwd be passed in or hardcoded? IDK right now.
-    cwd: Path = Path().absolute()
-    report_template: Template = env.get_template(template_name)
-    output: str = report_template.render(rows=ready_rows)
+    def generate_report(
+        self,
+        ready_rows: list[dict],
+        template_name: str = "report.html",
+        output_name: str = None
+    ):
+        cwd: Path = Path().absolute()
+        template: Template = self.env.get_template(template_name)
+        if not output_name:
+            today: str = arrow.now().format("YYYY_MM_DD_HH_MM")
+            output_name = "{}.html".format(today)
 
-    absolute_path: Path = cwd / output_name
+        hydrated_template: str = template.render(rows=ready_rows)
 
-    with absolute_path.open("w") as F:
-        F.write(output)
+        full_path: Path = cwd / output_name
+        with full_path.open("w") as F:
+            F.write(hydrated_template)

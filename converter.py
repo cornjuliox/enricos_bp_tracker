@@ -5,12 +5,13 @@ import argparse
 import pathlib
 import json
 import datetime
-from datetime import timezone
+from typing import Optional
+from datetime import timezone, tzinfo
 from csv import DictReader
 
 import arrow
 
-SYSTZ: timezone = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
+SYSTZ: Optional[tzinfo] = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
 
 parser: argparse.ArgumentParser = argparse.ArgumentParser()
 parser.add_argument("filepath", type=str, help="Path to the input tsv file.")
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
     dr: DictReader = DictReader(lines, delimiter="\t")
     dict_rows: list[dict] = [__clean_dict(x) for x in dr]
-    dict_rows: list[dict] = [__convert_dates(x) for x in dict_rows]
+    dict_rows = [__convert_dates(x) for x in dict_rows]
 
     if cli_args.console_only is True:
         for row in dict_rows:

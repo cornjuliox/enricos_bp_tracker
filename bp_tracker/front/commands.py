@@ -10,7 +10,6 @@ parser.add_argument(
 )
 subparser = parser.add_subparsers(help="sub-commands", dest="command")
 
-#####################
 add_command = subparser.add_parser(
     "add",
     help="Adds an entry to the log"
@@ -37,8 +36,7 @@ add_command.add_argument(
     default="",
     nargs="?"
 )
-#####################
-#####################
+
 remove_command = subparser.add_parser(
     "remove",
     help="Removes an entry from the log."
@@ -48,8 +46,7 @@ remove_command.add_argument(
     type=int,
     help="Every entry matching that timestamp will be removed."
 )
-##################### 
-##################### 
+
 latest_command = subparser.add_parser(
     "latest",
     help="Shows the latest N items, by default 10, use --limit to specify how many."
@@ -63,8 +60,7 @@ latest_command.add_argument(
     type=int,
     help="How many items would you like to see?"
 )
-#####################
-#####################
+
 by_month = subparser.add_parser(
     "month",
     help="View all entries for a specific month, pass in an integer from 1-12."
@@ -80,8 +76,7 @@ by_month.add_argument(
     type=int,
     help="Integer representing a 4-digit year, e.g '1998', '2002', etc"
 )
-#####################
-#####################
+
 by_date_range = subparser.add_parser(
     "range",
     help="View all entries for a specific date range."
@@ -96,11 +91,27 @@ by_date_range.add_argument(
     type=str,
     help="End date, in the format YYYY-MM-DD."
 )
-by_date_range.add_argument(
-    "--report",
-    action="store_true"
+
+report_cmd = subparser.add_parser(
+    "report",
+    help="Generate a report for a specific date range"
 )
-#####################
+report_cmd.add_argument(
+    "start_date",
+    type=str,
+    help="Start date, in the format YYYY-MM-DD"
+)
+report_cmd.add_argument(
+    "end_date",
+    type=str,
+    help="Start date, in the format YYYY-MM-DD"
+)
+report_cmd.add_argument(
+    "output_filename",
+    type=str,
+    help="Name of the output file."
+)
+
 cli_args = parser.parse_args()
 
 # NOTE: There is apparently no way to do this within argparse.

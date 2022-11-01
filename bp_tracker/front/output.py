@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from bp_tracker.back.data_store import BPDataStore
-from bp_tracker.front.report_generator import generate_report, env
+from bp_tracker.front.report_generator import ReportGenerator
 from bp_tracker.front.utils import (
     make_readable_timestamps,
     make_print_ready,
@@ -62,7 +62,7 @@ def month(cli_args: argparse.Namespace, store: BPDataStore):
 
     transformers: list[Callable] = [make_readable_timestamps, make_print_ready]
     ready_rows: list[dict] = store.date_range(target_arrow.int_timestamp, end_arrow.int_timestamp)
-    ready_rows: list[dict] = data_prep_pipeline(ready_rows, transformers)
+    ready_rows = data_prep_pipeline(ready_rows, transformers)
 
     for x in ready_rows:
         table.add_row(x["sys"], x["dia"], x["pulse"], x["notes"], x["timestamp"])
@@ -79,6 +79,7 @@ def date_range(cli_args: argparse.Namespace, store: BPDataStore):
     #       it will exclude everything from Oct 31.
     # NOTE: The reason for this is because arrow.get(end_date) will return `2022-10-31 @ 00:00:00+00:00`
     #       which basically excludes everything on the day of that date.
+    # NOTE: The solution is to shift the end date by 1 day.
     start_arrow: arrow.Arrow = arrow.get(start_date)
     end_arrow: arrow.Arrow = arrow.get(end_date).shift(days=1)
 
@@ -87,7 +88,7 @@ def date_range(cli_args: argparse.Namespace, store: BPDataStore):
 
     transformers: list[Callable] = [make_readable_timestamps, make_print_ready]
     ready_rows: list[dict] = store.date_range(start_int, end_int)
-    ready_rows: list[dict] = data_prep_pipeline(ready_rows, transformers)
+    ready_rows = data_prep_pipeline(ready_rows, transformers)
 
     table: Table = create_table(
         title=f"Blood pressure data starting from {start_arrow.format('YYYY-MM-DD')} to {end_arrow.format('YYYY-MM-DD')}",
@@ -98,11 +99,7 @@ def date_range(cli_args: argparse.Namespace, store: BPDataStore):
         table.add_row(x["sys"], x["dia"], x["pulse"], x["notes"], x["timestamp"])
 
     if cli_args.report:
-        # print("Generating a report...")
-        # NOTE: don't pass env in like this
-        # NOTE: redo the report stuff this is horrible
-        # NOTE: seriously. looking at it makes me angry
-        generate_report(env, ready_rows)
-        return
+        rep: ReportGenerator = ReportGenerator()
+        rep.generate_report(ready_rows)
     else:
         CONSOLE.print(table)

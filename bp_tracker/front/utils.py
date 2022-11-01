@@ -1,13 +1,20 @@
 import arrow
 import datetime
-from datetime import timezone
+from typing import Optional
+from datetime import tzinfo
 from collections.abc import Callable
 
 from rich.table import Table
 
 # NOTE: This is needed to convert timestamps to the correct local timezone.
 # NOTE: It's also really ugly looking lol
-SYSTZ: timezone = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
+# NOTE: Now that I'm using mypy it complains about this line being Optional[tzinfo]
+#       but the argument passed to arrow.to() needs to be Union[tzinfo, str]
+# NOTE: This led me down a rabbit hole - apparently being able to get a local timezone is not
+#       a guarantee, so all assumptions I made re: anything regarding the "time" is wrong.
+# NOTE: I might need to re-tool the whole timestamp thing to account for the possibility
+#       that there may not be a way to get a timezone.
+SYSTZ: Optional[tzinfo] = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
 
 # NOTE: I might consider making a special class to encapsulate and highlight
 #       the special purpose that these functions have.
@@ -16,7 +23,7 @@ def make_readable_timestamps(rows: list[dict]) -> list[dict]:
     def __convert_timestamp(x: dict) -> dict:
         int_timestamp: int = x["timestamp"]
         arrow_timestamp: arrow.Arrow = arrow.get(int_timestamp)
-        arrow_timestamp: arrow.Arrow = arrow_timestamp.to(SYSTZ)
+        arrow_timestamp = arrow_timestamp.to(SYSTZ)
         x["timestamp"] = arrow_timestamp.format("MMM DD, YYYY @ HH:mm")
         return x
 
@@ -54,5 +61,5 @@ def data_prep_pipeline(data: list[dict], makes: list[Callable]):
         except IndexError:
             break
         
-        data: list[dict] = func(data)
+        data = func(data)
     return data
