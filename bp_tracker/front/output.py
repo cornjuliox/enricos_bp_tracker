@@ -1,6 +1,7 @@
 import arrow
 import argparse
 import pathlib
+import logging
 from collections.abc import Callable
 
 from rich.console import Console
@@ -16,10 +17,12 @@ from bp_tracker.front.utils import (
 )
 
 CONSOLE: Console = Console()
+logger: logging.Logger = logging.getLogger(__name__)
 
 def latest(cli_args: argparse.Namespace, store: BPDataStore):
     limit: int = cli_args.limit or 10
     raw_rows: list[dict] = store.latest(limit)
+    logger.info(f"Fetching the latest {limit} entries.....")
 
     table: Table = create_table(
         title=f"Latest {len(raw_rows)} blood pressure measurements, most recent first.",
@@ -99,11 +102,7 @@ def date_range(cli_args: argparse.Namespace, store: BPDataStore):
     for x in ready_rows:
         table.add_row(x["sys"], x["dia"], x["pulse"], x["notes"], x["timestamp"])
 
-    if cli_args.report:
-        rep: ReportGenerator = ReportGenerator()
-        rep.generate_report(ready_rows)
-    else:
-        CONSOLE.print(table)
+    CONSOLE.print(table)
 
 def report(cli_args: argparse.Namespace, store: BPDataStore):
     output_filename: str = cli_args.output_filename
@@ -128,7 +127,6 @@ def report(cli_args: argparse.Namespace, store: BPDataStore):
 
     abs_path: pathlib.Path = pathlib.Path().absolute()
     full_path: pathlib.Path = abs_path / output_filename
-    print(full_path)
 
     with full_path.open("w") as F:
         F.write(ready_report)

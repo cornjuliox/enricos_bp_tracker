@@ -1,4 +1,5 @@
 import pathlib
+import logging
 
 from bp_tracker.front.commands import cli_args, parser
 from bp_tracker.front.input import add, remove

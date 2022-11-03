@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 # NOTE: I don't know what the types are for the subparsers? or any of the parsers for that matter. 
 # TODO: This could be organized better, I think
@@ -8,6 +9,7 @@ parser.add_argument(
     type=str,
     help="Full/relative path to the database file. If it doesn't exist it will be created."
 )
+parser.add_argument("--verbose", "-v", action="count", default=0)
 subparser = parser.add_subparsers(help="sub-commands", dest="command")
 
 add_command = subparser.add_parser(
@@ -113,6 +115,14 @@ report_cmd.add_argument(
 )
 
 cli_args = parser.parse_args()
+
+level: int = cli_args.verbose
+if level == 0:
+    logging.basicConfig(level=50)
+else:
+    logging.basicConfig(level=level * 10)
+    logging.debug("Debug logging enabled!")
+
 
 # NOTE: There is apparently no way to do this within argparse.
 # NOTE: This workaround will serve until I find a better one.

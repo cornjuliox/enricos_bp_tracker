@@ -7,11 +7,11 @@ class BPDataStore():
     def __init__(self, path: pathlib.Path):
         # NOTE: maybe a separate FileHandler class for this? 
         self.path: pathlib.Path = path
-        if self.path.exists():
-            with self.path.open("r") as F:
+        with self.path.open("r") as F:
+            try:
                 self._bpdata: list[dict[Any, Any]] = json.loads(F.read())
-        else:
-            self._bpdata = [] 
+            except json.decoder.JSONDecodeError:
+                self._bpdata = [] 
 
     # NOTE: I'm surprised python doesn't come with a builtin that does this but hey.
     # TODO: move this out into the utils lib, I think its better there
