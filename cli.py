@@ -7,11 +7,19 @@ from bp_tracker.front.output import latest, month, date_range, report
 from bp_tracker.back.data_store import BPDataStore
 
 
+logger: logging.Logger = logging.getLogger(__name__)
+
+
 if __name__ == "__main__":
     filepath: str = cli_args.filepath
+
     path: pathlib.Path = pathlib.Path(filepath)
+    logger.debug(f"path: {path}")
+
     store: BPDataStore = BPDataStore(path)
+
     command: str = cli_args.command
+    logger.debug(f"command: {command}")
 
     # NOTE: I guess these would be the equivalent of "views"
     dispatch: dict = {
@@ -22,7 +30,6 @@ if __name__ == "__main__":
         "range": date_range,
         "report": report
     }
-
     try:
         dispatch[command](cli_args, store)
     except KeyError:

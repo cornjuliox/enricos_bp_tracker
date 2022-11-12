@@ -1,10 +1,32 @@
 import pathlib
 import json
+import logging
+
 from typing import Any
 
+logger: logging.Logger = logging.getLogger(__name__)
+
+class FlatFileWriter():
+    def __init__(self, path: pathlib.Path):
+        self._path: pathlib.Path = path
+        self._backup: pathlib.Path = self._path.parent / (self._path.name + ".bak")
+
+    def retrieve(self) -> list[dict]:
+        with self._path.open("r") as F:
+            try:
+                bpdata: list[dict[Any, Any]] = json.loads(F.read())
+            except json.decoder.JSONDecodeError:
+                bpdata = []
+        
+        return bpdata
+
+    def commit(self, data: str):
+        with self._path.open("w") as F:
+            F.write(data)
 
 class BPDataStore():
     def __init__(self, path: pathlib.Path):
+        self._writer = FlatFileWriter(path)
         # NOTE: maybe a separate FileHandler class for this? 
         self.path: pathlib.Path = path
         with self.path.open("r") as F:
@@ -12,6 +34,8 @@ class BPDataStore():
                 self._bpdata: list[dict[Any, Any]] = json.loads(F.read())
             except json.decoder.JSONDecodeError:
                 self._bpdata = [] 
+
+        logger.debug(f"self._bpdata empty? {len(self._bpdata)}")
 
     # NOTE: I'm surprised python doesn't come with a builtin that does this but hey.
     # TODO: move this out into the utils lib, I think its better there

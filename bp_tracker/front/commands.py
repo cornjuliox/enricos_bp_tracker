@@ -38,6 +38,12 @@ add_command.add_argument(
     default="",
     nargs="?"
 )
+add_command.add_argument(
+    "--datetime",
+    type=str,
+    help="In case this was a recording for an earlier date and time please enter it here. Format is: MMM D, YYYY @ H:mm A",
+    default=None
+)
 
 remove_command = subparser.add_parser(
     "remove",
