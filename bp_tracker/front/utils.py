@@ -16,6 +16,9 @@ from rich.table import Table
 #       that there may not be a way to get a timezone.
 SYSTZ: Optional[tzinfo] = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
 
+def clamp(minimum, val, maximum):
+    return max(minimum, min(val, maximum))
+
 # NOTE: I might consider making a special class to encapsulate and highlight
 #       the special purpose that these functions have.
 #       e.g `class Transformer`, and then override `__call__()`

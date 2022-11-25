@@ -4,6 +4,8 @@ import logging
 
 from typing import Any
 
+from bp_tracker.front.utils import clamp
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 class FlatFileWriter():
@@ -29,28 +31,17 @@ class BPDataStore():
         # self._writer = FlatFileWriter(path)
         # NOTE: maybe a separate FileHandler class for this? 
         self.path: pathlib.Path = path
-        with self.path.open("r") as F:
-            try:
-                self._bpdata: list[dict[Any, Any]] = json.loads(F.read())
-                logger.debug("Existing file content found and loaded.")
-            except json.decoder.JSONDecodeError:
-                self._bpdata = [] 
-                logger.debug("No existing file content found, starting with an empty list.")
-
+        self.ffw: FlatFileWriter = FlatFileWriter(self.path)
+        self._bpdata: list[dict[Any, Any]] = self.ffw.retrieve()
         logger.debug(f"self._bpdata empty? {len(self._bpdata)}")
-
-    # NOTE: I'm surprised python doesn't come with a builtin that does this but hey.
-    # TODO: move this out into the utils lib, I think its better there
-    def _clamp(self, minimum, val, maximum):
-        return max(minimum, min(val, maximum))
 
     def _commit(self):
         logger.info("Committing new records to file.")
-        with self.path.open("w") as F:
-            F.write(json.dumps(self._bpdata))
+        prepped_data: str = json.dumps(self._bpdata)
+        self.ffw.commit(prepped_data)
     
     def latest(self, limit: int = 10, ascending: bool = False) -> list[dict]:
-        limit = self._clamp(1, limit, len(self._bpdata))
+        limit = clamp(1, limit, len(self._bpdata))
         logger.info("Retrieving latest records.")
         logger.debug(f"limit set to: {limit}")
 

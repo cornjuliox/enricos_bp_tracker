@@ -122,14 +122,6 @@ report_cmd.add_argument(
 
 cli_args = parser.parse_args()
 
-level: int = cli_args.verbose
-if level == 0:
-    logging.basicConfig(level=50)
-else:
-    logging.basicConfig(level=level * 10)
-    logging.debug("Debug logging enabled!")
-
-
 # NOTE: There is apparently no way to do this within argparse.
 # NOTE: This workaround will serve until I find a better one.
 if cli_args.command is None:
